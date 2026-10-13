@@ -1,5 +1,7 @@
 # Agent monitoring: design challenge prototype
 
+**▶ Live prototype: https://peymanhoss-source.github.io/non-linear-linear/** (desktop, 1440px)
+
 **The prompt:** tickets can be assigned to an AI agent. Design a way to see how the agent is doing, and whether it needs input to get unblocked.
 
 **My framing:** a **TPM** running a two-week cycle with a mixed team of devs and AI agents. The TPM needs to see at a glance which agents are blocked on them, then unblock them without leaving the page.
