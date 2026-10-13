@@ -1,0 +1,1201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cycle 24 · Agent monitoring</title>
+<meta name="viewport" content="width=1440">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fbfbfb;
+  --surface:#ffffff;
+  --surface-2:#f8f8f9;
+  --hover:#f5f5f6;
+  --selected:#f3f4fc;
+  --border:#e9e9ec;
+  --border-2:#dfdfe3;
+  --text:#1c1c21;
+  --text-2:#5f6069;
+  --text-3:#8f909a;
+  --text-4:#b9bac1;
+  --accent:#5e6ad2;
+  --accent-hover:#5059c5;
+  --accent-text:#4b55c4;
+  --accent-soft:#f1f2fd;
+  --accent-border:#d9dcf7;
+  --radius:6px;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{font:400 13px/1.45 Inter,system-ui,-apple-system,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;min-width:1440px;font-feature-settings:'cv11','ss01'}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+textarea{font:inherit;color:inherit}
+code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:0 4px;color:var(--text)}
+.i{flex:none;display:block}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--text-3)}
+.sp{flex:1}
+
+/* ---------- top bar ---------- */
+.topbar{height:44px;display:flex;align-items:center;gap:8px;padding:0 32px;border-bottom:1px solid var(--border);background:var(--surface)}
+.crumb{display:flex;align-items:center;gap:6px;color:var(--text-2);font-size:13px}
+.crumb b{color:var(--text);font-weight:500}
+.crumb .sep{color:var(--text-4)}
+.team-mark{width:18px;height:18px;border-radius:4px;background:#ececef;border:1px solid var(--border-2);display:grid;place-items:center;font-size:9px;font-weight:600;color:var(--text-2)}
+.me{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:12px}
+
+.wrap{max-width:1440px;margin:0 auto;padding:20px 32px 120px}
+
+/* ---------- cycle header ---------- */
+.cycle{display:flex;align-items:flex-end;gap:24px;margin-bottom:16px}
+.cycle h1{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.cycle-sub{color:var(--text-2);font-size:12px;margin-top:2px;display:flex;align-items:center;gap:6px}
+.cycle-metrics{margin-left:auto;display:flex;align-items:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);height:44px}
+.cm{padding:0 16px;border-right:1px solid var(--border);height:100%;display:flex;flex-direction:column;justify-content:center}
+.cm:last-child{border-right:0}
+.cm-l{font-size:11px;color:var(--text-3)}
+.cm-v{font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
+.cm-v span{color:var(--text-3);font-weight:400}
+.pbar{width:140px;height:4px;border-radius:2px;background:#ececef;overflow:hidden;display:flex;margin-top:5px}
+.pbar i{display:block;height:100%}
+.stack{display:flex;align-items:center}
+.stack > *{margin-left:-4px;box-shadow:0 0 0 2px var(--surface)}
+.stack > *:first-child{margin-left:0}
+
+/* ---------- avatars / small glyphs ---------- */
+.av{display:inline-grid;place-items:center;border-radius:50%;font-weight:600;color:#55565e;flex:none;letter-spacing:-.02em}
+.av-agent{border-radius:5px;background:#efeff2;border:1px solid var(--border-2);color:var(--text-2)}
+.who{display:inline-flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.who span{overflow:hidden;text-overflow:ellipsis}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tag{display:inline-flex;align-items:center;gap:4px;height:20px;padding:0 7px;border:1px solid var(--border);border-radius:10px;font-size:11.5px;color:var(--text-2);white-space:nowrap;background:var(--surface)}
+.tag-accent{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent-text);font-weight:500}
+.label{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border:1px solid var(--border);border-radius:10px;font-size:11.5px;color:var(--text-2);white-space:nowrap}
+.label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--text-4)}
+.type-chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px 0 6px;border:1px solid var(--border-2);border-radius:11px;font-size:12px;color:var(--text);background:var(--surface);white-space:nowrap}
+.type-chip .i{color:var(--accent)}
+.wait{display:inline-flex;align-items:center;gap:5px;color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wait.long{color:var(--accent-text);font-weight:500}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
+.dot-ring{box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* ---------- buttons ---------- */
+.btn{height:24px;padding:0 9px;border:1px solid var(--border-2);border-radius:5px;background:var(--surface);font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;color:var(--text);white-space:nowrap}
+.btn:hover{background:var(--hover)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-hover)}
+.btn-md{height:30px;padding:0 12px;font-size:13px}
+.icon-btn{width:26px;height:26px;border-radius:5px;display:grid;place-items:center;color:var(--text-2)}
+.icon-btn:hover{background:var(--hover);color:var(--text)}
+
+/* ---------- card shell ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px}
+.card-head{display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-bottom:1px solid var(--border)}
+.card-title{font-weight:600}
+.card-sub{color:var(--text-3);font-size:12px}
+.live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-3)}
+.live::before{content:'';width:6px;height:6px;border-radius:50%;background:#9aa0d9;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.stats-inline{margin-left:auto;display:flex;align-items:center;gap:16px;color:var(--text-2);font-size:12px}
+.stats-inline > span{display:inline-flex;align-items:center;gap:6px}
+.stats-inline b{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.stats-inline .hot b{color:var(--accent-text)}
+.sec-head{display:flex;align-items:center;gap:8px;height:32px;padding:0 16px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--text-2);user-select:none}
+.sec-head.click{cursor:pointer}
+.sec-head.click:hover{color:var(--text)}
+.sec-head .count{color:var(--text-3);font-weight:400}
+.sec-head .hint{margin-left:auto;font-weight:400;color:var(--text-3)}
+.chev{transition:transform .12s;color:var(--text-3)}
+.chev.open{transform:rotate(90deg)}
+.empty{padding:18px 16px;color:var(--text-3);font-size:12px;display:flex;align-items:center;gap:8px}
+
+/* rows shared */
+.row-click{cursor:pointer}
+.row-click:hover{background:var(--hover)}
+.sel{background:var(--selected)!important;box-shadow:inset 2px 0 0 var(--accent)}
+.idt{color:var(--text-3);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* ---------- A: triage queue ---------- */
+.qrow{display:grid;grid-template-columns:96px minmax(0,1fr) 130px 80px 210px;align-items:center;gap:14px;min-height:54px;padding:6px 16px;border-bottom:1px solid var(--border)}
+.q-ask{font-weight:500}
+.q-sub{display:flex;align-items:center;gap:6px;color:var(--text-3);font-size:12px;margin-top:3px;white-space:nowrap;min-width:0}
+.q-sub .ell{color:var(--text-2)}
+.q-actions{display:flex;justify-content:flex-end;gap:6px}
+.blk{display:inline-flex;align-items:center;gap:4px;color:var(--text-2)}
+.rrow{display:grid;grid-template-columns:16px 16px 62px minmax(0,1fr) 300px 130px 64px;align-items:center;gap:12px;height:38px;padding:0 16px;border-bottom:1px solid var(--border)}
+.step-txt{display:flex;align-items:center;gap:8px;color:var(--text-2);font-size:12px;min-width:0}
+.mini{width:48px;height:3px;border-radius:2px;background:#ececef;flex:none;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--text-3)}
+.card > div:last-child > .qrow:last-child,.card > div:last-child > .rrow:last-child{border-bottom:0}
+.foot-note{display:flex;align-items:center;gap:8px;height:36px;padding:0 16px;color:var(--text-3);font-size:12px}
+
+/* ---------- B: by input type ---------- */
+.stat-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border)}
+.stat{padding:12px 16px;border-right:1px solid var(--border)}
+.stat:last-child{border-right:0}
+.stat-label{font-size:12px;color:var(--text-2);display:flex;gap:6px;align-items:center}
+.stat-num{font-size:22px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.2}
+.stat.hot .stat-num{color:var(--accent-text)}
+.stat-sub{font-size:11.5px;color:var(--text-3);margin-top:1px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.col{border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0}
+.col:last-child{border-right:0}
+.col-head{height:40px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.col-head .i{color:var(--accent)}
+.col-head b{font-weight:500}
+.col-desc{color:var(--text-3);font-size:12px;margin-left:auto}
+.bitem{padding:11px 16px 12px;border-bottom:1px solid var(--border)}
+.b-top{display:flex;align-items:center;gap:6px;font-size:12px}
+.b-ask{font-weight:500;margin:5px 0 8px;line-height:1.4}
+.b-foot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
+.b-foot .q-actions{margin-left:auto}
+.col-empty{flex:1;display:grid;place-items:center;color:var(--text-3);font-size:12px;padding:24px;min-height:80px}
+
+/* ---------- C: agent roster ---------- */
+.rhead,.arow{display:grid;grid-template-columns:210px 150px minmax(0,1fr) 150px 84px 20px;align-items:center;gap:14px;padding:0 16px}
+.rhead{height:32px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.arow{height:52px;border-bottom:1px solid var(--border)}
+.a-name{font-weight:500}
+.a-spec{font-size:12px;color:var(--text-3)}
+.pill{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:11px;font-size:12px;border:1px solid var(--border);color:var(--text-2);white-space:nowrap}
+.pill-hot{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent-text);font-weight:500}
+.seg-bar{display:flex;gap:2px;margin-top:5px}
+.seg-bar i{height:4px;flex:1;border-radius:1px;background:#ececef}
+.seg-bar i.d{background:var(--text-3)}
+.seg-bar i.r{background:var(--text-4)}
+.seg-bar i.n{background:var(--accent)}
+.subrow{display:grid;grid-template-columns:16px 62px minmax(0,1fr) 120px 80px 210px;align-items:center;gap:12px;height:40px;padding:0 16px 0 52px;border-bottom:1px solid var(--border);background:#fdfdfd}
+.working{display:flex;align-items:center;gap:8px;min-width:0}
+.working .i{color:var(--accent)}
+
+/* ---------- issue list ---------- */
+.list-bar{display:flex;align-items:center;gap:8px;margin:4px 0 10px}
+.tabs{display:flex;gap:2px}
+.tabs button{height:26px;padding:0 10px;border-radius:5px;color:var(--text-2);font-size:12px;font-weight:500;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px}
+.tabs button:hover{background:var(--hover)}
+.tabs button.on{background:var(--surface);border-color:var(--border-2);color:var(--text)}
+.tabs button span{color:var(--text-3);font-weight:400}
+.list{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.ghead{display:flex;align-items:center;gap:8px;height:34px;padding:0 16px;background:var(--surface-2);border-bottom:1px solid var(--border);font-weight:500;cursor:pointer;user-select:none}
+.ghead .count{color:var(--text-3);font-weight:400}
+.lrow{display:grid;grid-template-columns:16px 64px 16px minmax(0,1fr) auto 24px 20px;align-items:center;gap:12px;height:38px;padding:0 16px;border-bottom:1px solid var(--border)}
+.lrow:hover{background:var(--hover)}
+.list > :last-child{border-bottom:0}
+.ltitle{display:flex;align-items:center;gap:8px;min-width:0}
+.ltitle .tt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.llabels{display:flex;gap:6px}
+.lest{color:var(--text-3);font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- side panel ---------- */
+/* docked: panel is a sibling column that pushes #main, not an overlay */
+.app{display:flex;height:100vh}
+#main{flex:1;min-width:0;overflow:auto;container-type:inline-size}
+.panel{flex:none;width:0;overflow:hidden;background:var(--surface);border-left:1px solid transparent;transition:width .22s cubic-bezier(.2,.8,.2,1)}
+.panel.open{width:520px;border-left-color:var(--border)}
+.panel-inner{width:520px;height:100%;display:flex;flex-direction:column}
+/* tighten main content while the panel is docked */
+@container (max-width:1100px){
+  .wrap{padding-left:24px;padding-right:24px}
+  .topbar{padding:0 24px}
+  .llabels{display:none}
+  .cycle-metrics .cm:nth-child(4){display:none}
+  .stats-inline > span:nth-child(4){display:none}
+  .qrow{grid-template-columns:92px minmax(0,1fr) 96px 70px auto}
+  .rrow{grid-template-columns:16px 16px 62px minmax(0,1fr) 220px 96px 56px}
+  .stat-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stat:nth-child(n+4){display:none}
+  .stat:nth-child(3){border-right:0}
+  .col-desc{display:none}
+  .b-foot{flex-wrap:wrap}
+  .rhead,.arow{grid-template-columns:170px 124px minmax(0,1fr) 72px 20px}
+  .rhead > :nth-child(4),.arow > :nth-child(4){display:none}
+  .subrow{grid-template-columns:16px 62px minmax(0,1fr) 70px auto;padding-left:44px}
+  .subrow > :nth-child(4){display:none}
+}
+.p-head{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px 0 20px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-2)}
+.p-body{flex:1;overflow:auto;padding:20px 20px 80px}
+.p-title{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.35;margin-bottom:12px}
+.p-link{display:inline;color:inherit;text-decoration:none;margin-bottom:0}
+.p-link .i{display:inline-block;vertical-align:-1px;margin-left:6px;color:var(--text-4);opacity:0;transition:opacity .12s}
+.p-link:hover{text-decoration:underline;text-decoration-color:var(--border-2);text-underline-offset:3px}
+.p-link:hover .i{opacity:1}
+.p-meta{display:flex;align-items:center;gap:14px;margin:8px 0 4px;font-size:12px;color:var(--text-2)}
+.p-meta > span{display:inline-flex;align-items:center;gap:5px}
+a.linkbtn{text-decoration:none}
+.props{display:grid;grid-template-columns:84px 1fr;row-gap:6px;column-gap:12px;font-size:12px;margin-bottom:20px;align-items:center}
+.props dt{color:var(--text-3)}
+.props dd{display:flex;align-items:center;gap:6px;color:var(--text);flex-wrap:wrap}
+.p-sec{margin-top:22px}
+.p-sec-h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:8px}
+.p-sec-h .count{color:var(--text-3);font-weight:400}
+
+.req{border:1px solid var(--accent-border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.req-top{display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;background:var(--accent-soft);border-bottom:1px solid var(--accent-border);font-size:12px;color:var(--text-2)}
+.req-top .i{color:var(--accent)}
+.req-top b{color:var(--accent-text);font-weight:600}
+.req-body{padding:14px}
+.req-ask{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:6px}
+.req-body p{color:var(--text-2);line-height:1.55;margin-bottom:12px}
+.kv{display:grid;grid-template-columns:120px 1fr;border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:12px;margin-bottom:12px}
+.kv dt,.kv dd{padding:7px 10px;border-bottom:1px solid var(--border)}
+.kv dt{color:var(--text-3);background:var(--surface-2);border-right:1px solid var(--border)}
+.kv dt:nth-last-of-type(1),.kv dd:last-child{border-bottom:0}
+.risk{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-2)}
+.risk i{width:6px;height:6px;border-radius:50%;background:var(--text-4)}
+.risk.med i{background:var(--accent)}
+.req-foot{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface-2)}
+.req-foot .muted{font-size:12px}
+.ta{width:100%;min-height:64px;resize:vertical;border:1px solid var(--border-2);border-radius:6px;padding:8px 10px;font-size:12.5px;line-height:1.5;background:var(--surface);outline:none}
+.ta:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.ta-label{font-size:12px;color:var(--text-2);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.svc{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px}
+.svc-logo{width:28px;height:28px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border-2);display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--text-2)}
+.svc-name{font-weight:500}
+.svc-env{font-size:12px;color:var(--text-3)}
+.scopes{border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.scope{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px}
+.scope:last-child{border-bottom:0}
+.scope .lvl{margin-left:auto;color:var(--text-2);white-space:nowrap}
+.scope.off{color:var(--text-3)}
+.scope.off .lvl{color:var(--text-3)}
+.segctl{display:inline-flex;border:1px solid var(--border-2);border-radius:6px;overflow:hidden;background:var(--surface)}
+.segctl button{height:26px;padding:0 10px;font-size:12px;color:var(--text-2);border-right:1px solid var(--border-2)}
+.segctl button:last-child{border-right:0}
+.segctl button.on{background:var(--accent-soft);color:var(--accent-text);font-weight:500}
+.ans-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+.req-alt{padding:12px 14px;border-top:1px solid var(--border);background:var(--surface-2)}
+.alt-row{display:flex;align-items:center;gap:10px}
+.alt-t{font-weight:500;font-size:12.5px;white-space:nowrap}
+.alt-d{font-size:12px;color:var(--text-3)}
+.notice{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.5}
+.notice b{color:var(--text);font-weight:500}
+.notice .i{margin-top:2px}
+.notice-actions{margin-top:8px;display:flex;gap:6px}
+
+.steps{border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.step{display:grid;grid-template-columns:16px 1fr auto;gap:10px;align-items:center;min-height:32px;padding:6px 10px;border-bottom:1px solid var(--border);font-size:12.5px}
+.step:last-child{border-bottom:0}
+.step.done{color:var(--text-2)}
+.step.todo{color:var(--text-3)}
+.step.current{font-weight:500;background:var(--surface-2)}
+.step .meta{font-size:11.5px;color:var(--text-3);font-weight:400;font-variant-numeric:tabular-nums}
+.logs{font-size:12px}
+.log{display:grid;grid-template-columns:44px 1fr;gap:10px;padding:5px 0;color:var(--text-2);line-height:1.5}
+.log .t{color:var(--text-3);font-variant-numeric:tabular-nums}
+.log.me{color:var(--text)}
+.pr{border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.tl{position:relative}
+.tl-step{display:grid;grid-template-columns:16px minmax(0,1fr);column-gap:12px;position:relative;padding:6px 0}
+.tl-step:not(:last-child)::before{content:'';position:absolute;left:7.5px;top:24px;bottom:-6px;width:1px;background:var(--border)}
+.tl-icon{height:20px;display:grid;place-items:center;position:relative;z-index:1}
+.tl-head{display:flex;align-items:center;gap:8px;min-height:20px;font-size:12.5px}
+.tl-n{color:var(--text-4);font-size:11px;width:12px;flex:none}
+.tl-t{min-width:0}
+.tl-step.done .tl-t{color:var(--text-2)}
+.tl-step.todo .tl-t{color:var(--text-3)}
+.tl-step.current .tl-t{font-weight:600}
+.tl-head .meta{font-size:11.5px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tl-detail{margin:8px 0 6px;display:flex;flex-direction:column;gap:8px}
+.tl-note{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}
+.tl-note .i{color:var(--text-3)}
+.linkbtn{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 6px 0 8px;border-radius:5px;font-size:12px;color:var(--text-2);font-weight:500}
+.linkbtn:hover{background:var(--hover);color:var(--text)}
+.layer{animation:layerIn .18s cubic-bezier(.2,.8,.2,1)}
+@keyframes layerIn{from{transform:translateX(20px);opacity:0}}
+.pr-h{display:flex;align-items:center;gap:8px;font-weight:500}
+.pr-m{display:flex;gap:12px;font-size:12px;color:var(--text-2);margin-top:6px}
+
+/* ---------- toast + demo bar ---------- */
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;background:#1c1c21;color:#f4f4f5;padding:9px 14px;border-radius:8px;font-size:12.5px;display:flex;align-items:center;gap:8px;transition:all .18s;pointer-events:none;z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.demo{position:fixed;left:16px;bottom:16px;background:#18181b;color:#e4e4e7;border-radius:10px;height:42px;display:flex;align-items:center;gap:6px;padding:0 6px 0 14px;font-size:12px;box-shadow:0 8px 28px rgba(0,0,0,.22);z-index:60}
+.demo-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#71717a;font-weight:600;margin-right:6px}
+.demo-name{color:#a1a1aa;margin-right:2px}
+.dseg{display:flex;background:#27272a;border-radius:6px;padding:2px;gap:2px}
+.dseg button{height:28px;padding:0 10px;border-radius:5px;color:#a1a1aa;font-size:12px}
+.dseg button:hover{color:#fff}
+.dseg button.on{background:#3f3f46;color:#fff}
+.dseg button b{font-weight:600;margin-right:4px;color:#d4d4d8}
+.demo-sep{width:1px;height:20px;background:#3f3f46;margin:0 4px}
+.demo-btn{height:28px;padding:0 10px;border-radius:5px;color:#a1a1aa}
+.demo-btn:hover{background:#27272a;color:#fff}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="main"></div>
+  <aside class="panel" id="panel"></aside>
+</div>
+<div class="toast" id="toast"></div>
+<div class="demo" id="demo"></div>
+
+<script>
+/* =========================================================
+   FAKE DATA
+   ========================================================= */
+const PEOPLE = {
+  sam:    { name:'Sam Ortiz',     initials:'SO', bg:'#e6e6ea', role:'Technical program manager' },
+  priya:  { name:'Priya Raman',   initials:'PR', bg:'#e9e3f1', role:'Backend · Ledger' },
+  marcus: { name:'Marcus Chen',   initials:'MC', bg:'#e0e8f1', role:'Frontend · Merchant dashboard' },
+  dana:   { name:'Dana Okafor',   initials:'DO', bg:'#e4ece1', role:'Infra / SRE' },
+  leo:    { name:'Leo Fischer',   initials:'LF', bg:'#efe6da', role:'Backend · Payouts' },
+  sofia:  { name:'Sofia Alvarez', initials:'SA', bg:'#f1e2e7', role:'Product design' },
+  jonah:  { name:'Jonah Kim',     initials:'JK', bg:'#e0ecec', role:'QA' },
+};
+const AGENTS = {
+  atlas: { name:'Atlas', spec:'Data & reconciliation' },
+  forge: { name:'Forge', spec:'Backend · migrations' },
+  scout: { name:'Scout', spec:'QA & integrations' },
+  lumen: { name:'Lumen', spec:'Infra & messaging' },
+  relay: { name:'Relay', spec:'Observability' },
+};
+const PRI = {2:'High',3:'Medium',4:'Low',0:'No priority'};   // 4 tiers, sorted high → none
+const PRI_ORDER = [2,3,4,0];
+const STATUS = [
+  ['in_progress','In Progress'],['in_review','In Review'],['todo','Todo'],['backlog','Backlog'],['done','Done']
+];
+const TYPE = {
+  approval:{ label:'Approval', desc:'Yes / no decisions' },
+  access:  { label:'Access',   desc:'Services & integrations' },
+  person:  { label:'Person',   desc:'Wants to consult a teammate' },
+};
+
+const INITIAL = [
+  /* ---------- agent: needs input ---------- */
+  { id:'PAY-412', title:'Add idempotency keys to refunds API', status:'in_progress', pri:2, est:3, labels:['API','Refunds'], agent:'forge', blocks:'PAY-413',
+    run:{ state:'needs_input', waitMin:134,
+      input:{ type:'approval', risk:'Medium', quick:false,
+        ask:'Run production backfill for <code>refunds.idempotency_key</code>',
+        summary:'The staging backfill finished cleanly. It found no duplicate keys and caused no latency regression. Forge wants approval to run the same batched backfill against production.',
+        details:[['Target','<code>payments-db-primary</code> · production'],['Affects','<code>refunds</code> · 2,104,388 rows'],['Method','Batched 5k rows · online · no table lock'],['Est. duration','~6 min (staging took 5m 48s)'],['Rollback','Revert migration <code>0142</code> and drop the column'],['Suggested window','Today 22:00–23:00 UTC, the lowest refund volume']],
+        meta:'Blocks PAY-413' },
+      steps:[
+        {t:'Read refund create path and existing dedupe logic', s:'done', meta:'09:12'},
+        {t:'Add <code>idempotency_key</code> column + unique index (migration 0142)', s:'done', meta:'10:40'},
+        {t:'Handle keys in <code>POST /v1/refunds</code>, 409 on replay mismatch', s:'done', meta:'13:02'},
+        {t:'Backfill existing rows on staging', s:'done', meta:'14:12'},
+        {t:'Backfill existing rows on production', s:'current'},
+        {t:'Open PR and request review from Leo', s:'todo'},
+      ],
+      log:[
+        ['14:06','Ran migration <code>0142</code> on staging. Ok.'],
+        ['14:12','Staging backfill complete: 2,098,551 rows in 5m 48s'],
+        ['14:13','Verified 0 duplicate keys. p99 refund latency unchanged at 212ms.'],
+        ['14:14','Requested approval for the production backfill'],
+      ]}},
+
+  { id:'PAY-405', title:'Reconcile Stripe payout reports with ledger', status:'in_progress', pri:2, est:5, labels:['Ledger','Finance'], agent:'atlas',
+    run:{ state:'needs_input', waitMin:185,
+      input:{ type:'person', person:'priya',
+        ask:'Ask Priya Raman about the <code>settled_at</code> timezone',
+        question:'Is <code>ledger_entries.settled_at</code> stored in UTC or in the merchant’s timezone?',
+        whyShort:'Owns ledger-service',
+        context:'The docs say UTC, but <code>reconcile.go:212</code> converts to the merchant’s timezone. All 214 mismatched payouts are off by one day, for merchants west of UTC.',
+        why:'Owns ledger-service · wrote 14 of the last 20 commits to <code>reconcile.go</code>',
+        availability:'Focused on PAY-388 · active 12m ago',
+        draft:'Hi Priya, quick question about ledger_entries.settled_at. docs/ledger.md says it’s stored in UTC, but reconcile.go:212 converts it to merchant.timezone before writing. Which one is the source of truth? 214 payout mismatches are off by exactly one day, all for merchants west of UTC.',
+        meta:'214 mismatched lines' },
+      steps:[
+        {t:'Pull 30 days of Stripe payout reports', s:'done', meta:'12:41'},
+        {t:'Map payout lines to <code>ledger_entries</code>', s:'done', meta:'12:58'},
+        {t:'Flag mismatches (214 found)', s:'done', meta:'13:09'},
+        {t:'Confirm <code>settled_at</code> timezone semantics', s:'current'},
+        {t:'Write nightly reconciliation job', s:'todo'},
+        {t:'Alert #payments-ledger on drift > 0.1%', s:'todo'},
+      ],
+      log:[
+        ['12:41','Fetched 30 days of payout reports (3,912 lines)'],
+        ['12:58','Matched 3,698 lines to ledger entries'],
+        ['13:09','214 mismatches, all ±1 day, all merchants in UTC−5 to UTC−8'],
+        ['13:15','Found conflicting timezone handling: <code>docs/ledger.md</code> vs <code>reconcile.go:212</code>'],
+        ['13:16','Asked to consult Priya Raman (ledger owner)'],
+      ]}},
+
+  { id:'PAY-398', title:'Migrate webhook retries to SQS queue', status:'in_progress', pri:2, est:5, labels:['Infra','Webhooks'], agent:'lumen',
+    run:{ state:'needs_input', waitMin:47,
+      input:{ type:'access', service:'AWS', logo:'AWS', env:'Staging only · account payments-stg',
+        ask:'Write access to AWS SQS (staging) + CloudWatch read',
+        why:'To create the retry queue and its dead-letter queue, then watch redrive metrics during the 3× peak load test. No production access requested.',
+        scopes:[['<code>sqs:CreateQueue</code>, <code>SendMessage</code>, <code>ReceiveMessage</code>','Write · payments-webhook-retries-*'],['<code>cloudwatch:GetMetricData</code>','Read'],['<code>iam:PassRole</code>','Not requested',true]],
+        meta:'Staging only' },
+      steps:[
+        {t:'Profile current cron-based retries', s:'done', meta:'15:02'},
+        {t:'Design queue + DLQ topology', s:'done', meta:'15:25'},
+        {t:'Provision staging queue and DLQ', s:'current'},
+        {t:'Port retry worker to SQS consumer', s:'todo'},
+        {t:'Load test at 3× peak webhook volume', s:'todo'},
+        {t:'Cut over staging and monitor 24h', s:'todo'},
+      ],
+      log:[
+        ['15:02','Current retries: cron every 60s, max 8 attempts, 4.1% end in manual replay'],
+        ['15:25','Proposed: SQS standard queue, visibility backoff 30s→1h, DLQ after 8 receives'],
+        ['15:33','Requested AWS access for staging account'],
+      ]}},
+
+  { id:'PAY-426', title:'Receipt email for partial refunds', status:'in_progress', pri:3, est:3, labels:['Email','Frontend'], agent:'lumen',
+    run:{ state:'needs_input', waitMin:92,
+      input:{ type:'person', person:'marcus',
+        ask:'Ask Marcus Chen which email layout to build on',
+        question:'Should the partial-refund receipt build on <code>ReceiptLayout</code> or the new <code>EmailShell</code>?',
+        whyShort:'Owns email templates · author of PR #2291',
+        context:'<code>ReceiptLayout</code> is being removed in Q1, but Marcus’s open PR #2291 is reworking <code>EmailShell</code>. Building on it now will likely conflict.',
+        why:'Owns email templates · author of open PR #2291 (EmailShell)',
+        availability:'Reviewing PAY-391 · active now',
+        draft:'Hey Marcus, for the partial-refund receipt, should I build on ReceiptLayout or the new EmailShell? I see #2291 reworks the EmailShell header and footer. If that lands this cycle I’d rather target it than migrate later.',
+        meta:'Related: PR #2291' },
+      steps:[
+        {t:'Audit existing receipt templates', s:'done', meta:'14:20'},
+        {t:'Draft partial-refund copy and line items', s:'done', meta:'14:44'},
+        {t:'Choose layout component', s:'current'},
+        {t:'Build template + plain-text fallback', s:'todo'},
+        {t:'Snapshot tests (en-US, de-DE, ja-JP)', s:'todo'},
+        {t:'Open PR', s:'todo'},
+      ],
+      log:[
+        ['14:20','Found 3 receipt templates. 2 use ReceiptLayout and 1 uses EmailShell.'],
+        ['14:44','Drafted copy: “£12.40 of £48.00 refunded to Visa •• 4242”'],
+        ['14:48','Asked to consult Marcus Chen about layout direction'],
+      ]}},
+
+  { id:'PAY-424', title:'Sync dispute evidence to Zendesk', status:'in_progress', pri:4, est:3, labels:['Disputes','Integration'], agent:'scout',
+    run:{ state:'needs_input', waitMin:62,
+      input:{ type:'access', service:'Zendesk', logo:'ZD', env:'payments-support.zendesk.com',
+        ask:'Connect Zendesk (tickets: read & write)',
+        why:'To create one Zendesk ticket per open dispute and attach the evidence files, so support can respond before the bank deadline. 38 disputes are open right now.',
+        scopes:[['<code>tickets</code>','Read & write'],['<code>ticket_fields</code>','Read'],['<code>users</code>','Read'],['<code>macros</code>','Not requested',true]],
+        meta:'38 open disputes' },
+      steps:[
+        {t:'Map dispute evidence fields', s:'done', meta:'14:50'},
+        {t:'Draft Zendesk ticket schema', s:'done', meta:'15:05'},
+        {t:'Connect to Zendesk', s:'current'},
+        {t:'Implement sync worker', s:'todo'},
+        {t:'Backfill 38 open disputes', s:'todo'},
+      ],
+      log:[
+        ['14:50','Mapped 11 evidence fields. 3 need file attachments.'],
+        ['15:05','Ticket schema drafted with custom fields: dispute_id, reason_code, due_by'],
+        ['15:18','Requested Zendesk OAuth connection'],
+      ]}},
+
+  { id:'PAY-421', title:'Fix flaky checkout e2e test on Safari', status:'in_progress', pri:3, est:2, labels:['QA','Checkout'], agent:'scout',
+    run:{ state:'needs_input', waitMin:18,
+      input:{ type:'approval', risk:'Low', quick:true,
+        ask:'Quarantine <code>checkout.applePay.spec</code> for 48h',
+        summary:'This spec fails in 31% of Safari runs and is blocking 6 open PRs. Scout would skip it in CI while it fixes the race condition in the payment-sheet mock.',
+        details:[['Spec','<code>e2e/checkout/applePay.spec.ts</code>'],['Failure rate','31% · 31 of the last 100 Safari runs'],['PRs blocked','6, including PAY-391 and PAY-414'],['Coverage gap','Apple Pay happy path on Safari only'],['Auto-expires','Thu Oct 15, 16:00']],
+        meta:'Unblocks 6 PRs' },
+      steps:[
+        {t:'Collect the last 100 Safari CI runs', s:'done', meta:'15:40'},
+        {t:'Isolate flaky spec', s:'done', meta:'15:51'},
+        {t:'Quarantine spec in CI', s:'current'},
+        {t:'Fix race in payment-sheet mock', s:'todo'},
+        {t:'Unquarantine and verify over 50 runs', s:'todo'},
+      ],
+      log:[
+        ['15:40','Pulled 100 Safari runs. 31 failures, all in applePay.spec.'],
+        ['15:51','Root cause: mock resolves before <code>paymentsheet:ready</code> event'],
+        ['16:02','Requested approval to quarantine'],
+      ]}},
+
+  /* ---------- agent: running ---------- */
+  { id:'PAY-430', title:'Generate OpenAPI spec for payouts v2', status:'in_progress', pri:3, est:3, labels:['API','Docs'], agent:'atlas',
+    run:{ state:'running', elapsedMin:22,
+      steps:[
+        {t:'Crawl payouts v2 routes', s:'done', meta:'15:58'},
+        {t:'Infer schemas from handlers', s:'done', meta:'16:03'},
+        {t:'Resolve shared components', s:'done', meta:'16:07'},
+        {t:'Validate against contract tests', s:'done', meta:'16:12'},
+        {t:'Write request/response examples', s:'current', meta:'14 of 23'},
+        {t:'Open PR', s:'todo'},
+      ],
+      log:[['15:58','Found 23 endpoints under /v2/payouts'],['16:12','Spec validates. 0 contract test failures.'],['16:14','Writing examples']]}},
+  { id:'PAY-419', title:'Add retry jitter to bank-transfer poller', status:'in_progress', pri:3, est:2, labels:['Payouts'], agent:'forge',
+    run:{ state:'running', elapsedMin:41,
+      steps:[
+        {t:'Find thundering-herd window in poller logs', s:'done', meta:'15:39'},
+        {t:'Add full-jitter backoff', s:'done', meta:'15:58'},
+        {t:'Run unit tests', s:'current', meta:'148 / 212'},
+        {t:'Run soak test on staging', s:'todo'},
+        {t:'Open PR', s:'todo'},
+      ],
+      log:[['15:39','Retries cluster at :00 and :30. Peak 1.8k req/s to bank API.'],['15:58','Implemented full jitter, base 2s and cap 5m'],['16:16','Running tests']]}},
+  { id:'PAY-433', title:'Backfill missing merchant_category codes', status:'in_progress', pri:4, est:2, labels:['Data'], agent:'relay',
+    run:{ state:'running', elapsedMin:70,
+      steps:[
+        {t:'Query merchants without an MCC', s:'done', meta:'15:10'},
+        {t:'Classify merchants', s:'current', meta:'812 / 1,240'},
+        {t:'Spot-check 50 random results', s:'todo'},
+        {t:'Write backfill script', s:'todo'},
+        {t:'Dry run on staging', s:'todo'},
+        {t:'Open PR', s:'todo'},
+      ],
+      log:[['15:10','1,240 merchants missing merchant_category'],['15:14','Classifying from website + transaction descriptors']]}},
+
+  /* ---------- agent: in review ---------- */
+  { id:'PAY-401', title:'Paginate disputes list endpoint', status:'in_review', pri:3, est:2, labels:['API','Disputes'], agent:'scout',
+    run:{ state:'review', elapsedMin:300, pr:{ num:2304, diff:'+182 −41', files:6, ci:'Passing', reviewer:'leo', note:'Waiting on review' },
+      steps:[{t:'Add cursor pagination',s:'done'},{t:'Update SDK + docs',s:'done'},{t:'Open PR',s:'done'}],
+      log:[['11:20','Opened PR #2304'],['11:22','Requested review from Leo Fischer']]}},
+  { id:'PAY-407', title:'Add Datadog spans to refund worker', status:'in_review', pri:4, est:1, labels:['Observability'], agent:'relay',
+    run:{ state:'review', elapsedMin:95, pr:{ num:2299, diff:'+64 −8', files:3, ci:'Running', reviewer:'dana', note:'Approved, merging after CI' },
+      steps:[{t:'Instrument worker',s:'done'},{t:'Add dashboard',s:'done'},{t:'Open PR',s:'done'}],
+      log:[['14:40','Opened PR #2299'],['15:52','Dana Okafor approved']]}},
+
+  /* ---------- agent: done ---------- */
+  { id:'PAY-381', title:'Add request IDs to payout logs', status:'done', pri:4, est:1, labels:['Observability'], agent:'relay' },
+  { id:'PAY-384', title:'Fix N+1 query in disputes list', status:'done', pri:3, est:1, labels:['Disputes'], agent:'scout' },
+  { id:'PAY-386', title:'Write runbook for webhook replay', status:'done', pri:4, est:1, labels:['Docs'], agent:'atlas' },
+  { id:'PAY-389', title:'Remove unused legacy_fx module', status:'done', pri:4, est:1, labels:['Cleanup'], agent:'forge' },
+  { id:'PAY-390', title:'Translate dispute emails to es-MX', status:'done', pri:4, est:1, labels:['Email'], agent:'lumen' },
+  { id:'PAY-392', title:'Bump stripe-go to v82', status:'done', pri:3, est:1, labels:['Dependencies'], agent:'relay' },
+  { id:'PAY-394', title:'Add tests for refund edge cases', status:'done', pri:3, est:2, labels:['Refunds','QA'], agent:'scout' },
+
+  /* ---------- humans ---------- */
+  { id:'PAY-388', title:'Ledger: split settlement entries by currency', status:'in_progress', pri:2, est:5, labels:['Ledger'], who:'priya' },
+  { id:'PAY-391', title:'Refund status timeline in merchant dashboard', status:'in_progress', pri:3, est:3, labels:['Frontend','Refunds'], who:'marcus' },
+  { id:'PAY-402', title:'Rotate KMS keys for card vault (Q4)', status:'in_progress', pri:2, est:2, labels:['Security'], who:'dana' },
+  { id:'PAY-410', title:'Payout scheduler: support T+1 for EU merchants', status:'in_progress', pri:2, est:8, labels:['Payouts'], who:'leo' },
+  { id:'PAY-395', title:'Checkout error states design QA', status:'in_review', pri:4, est:1, labels:['Design'], who:'sofia' },
+  { id:'PAY-399', title:'Load test refund worker at 3× peak', status:'in_review', pri:3, est:3, labels:['QA','Refunds'], who:'jonah' },
+  { id:'PAY-413', title:'Expose idempotency key in refunds SDK', status:'todo', pri:3, est:2, labels:['API','Refunds'], who:'leo', blockedBy:'PAY-412' },
+  { id:'PAY-414', title:'Show partial refund breakdown on receipt page', status:'todo', pri:3, est:3, labels:['Frontend'], who:'marcus' },
+  { id:'PAY-418', title:'Ledger reconciliation alert thresholds', status:'todo', pri:3, est:2, labels:['Ledger'], who:'priya' },
+  { id:'PAY-422', title:'Terraform: move payments-staging to new VPC', status:'todo', pri:2, est:5, labels:['Infra'], who:'dana' },
+  { id:'PAY-428', title:'Regression suite for 3DS2 challenge flow', status:'todo', pri:3, est:3, labels:['QA','Checkout'], who:'jonah' },
+  { id:'PAY-431', title:'Spike: evaluate Adyen as a secondary processor', status:'backlog', pri:0, est:3, labels:['Research'], who:'leo' },
+  { id:'PAY-432', title:'Empty states for payouts v2', status:'backlog', pri:4, est:2, labels:['Design'], who:'sofia' },
+  { id:'PAY-380', title:'Ledger: add settled_at index', status:'done', pri:3, est:1, labels:['Ledger'], who:'priya' },
+  { id:'PAY-383', title:'Fix currency formatting in CSV export', status:'done', pri:4, est:1, labels:['Frontend'], who:'marcus' },
+  { id:'PAY-385', title:'Upgrade Postgres 15 → 16 on payments-staging', status:'done', pri:2, est:3, labels:['Infra'], who:'dana' },
+];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const clone = o => JSON.parse(JSON.stringify(o));
+const store = {
+  get(k){ try { return localStorage.getItem('agentmon:'+k) } catch(e){ return null } },
+  set(k,v){ try { localStorage.setItem('agentmon:'+k, v) } catch(e){} },
+};
+const state = {
+  variant: store.get('variant') || 'A',
+  issues: clone(INITIAL),
+  openId: null,
+  filter: 'all',
+  panelView: 'detail',   // 'detail' | 'log'
+  groupBy: 'priority',
+  collapsed: { g_done:true, a_running:true, a_review:true, c_relay:true },
+  preview: {},  // person-input: show the drafted message to the teammate
+  drafts: {},   // textarea contents
+  dur: {},      // access duration per issue
+};
+
+/* =========================================================
+   ICONS
+   ========================================================= */
+const svg = (inner, s=14, extra='') => `<svg class="i ${extra}" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const I = {
+  sparkle: s => `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}"><path d="M8 1.75c.35 2.9 1.55 4.1 4.6 4.6-3.05.5-4.25 1.7-4.6 4.6-.35-2.9-1.55-4.1-4.6-4.6 3.05-.5 4.25-1.7 4.6-4.6z" fill="currentColor"/><path d="M12.6 10.6c.15 1.2.6 1.65 1.75 1.8-1.15.15-1.6.6-1.75 1.8-.15-1.2-.6-1.65-1.75-1.8 1.15-.15 1.6-.6 1.75-1.8z" fill="currentColor" opacity=".6"/></svg>`,
+  approval: (s=14) => svg('<circle cx="8" cy="8" r="6.25"/><path d="M5.6 8.2l1.6 1.6 3.2-3.5"/>', s),
+  access: (s=14) => svg('<circle cx="5.5" cy="10.5" r="2.75"/><path d="M7.5 8.5L13.25 2.75M11 5l1.75 1.75M12.25 3.75L14 5.5"/>', s),
+  person: (s=14) => svg('<circle cx="8" cy="5.5" r="2.6"/><path d="M3 13.5c.7-2.3 2.7-3.6 5-3.6s4.3 1.3 5 3.6"/>', s),
+  close: (s=14) => svg('<path d="M4 4l8 8M12 4l-8 8"/>', s),
+  chev: (open) => svg('<path d="M6 4l4 4-4 4"/>', 12, 'chev'+(open?' open':'')),
+  pr: (s=14) => svg('<circle cx="4.5" cy="3.5" r="1.5"/><circle cx="4.5" cy="12.5" r="1.5"/><circle cx="11.5" cy="12.5" r="1.5"/><path d="M4.5 5v6M11.5 11V6.5a2 2 0 0 0-2-2H7.5M9 3L7.5 4.5 9 6"/>', s),
+  clock: (s=14) => svg('<circle cx="8" cy="8" r="6.25"/><path d="M8 4.75V8l2 1.5"/>', s),
+  check: (s=14) => svg('<path d="M3.5 8.5l3 3 6-7"/>', s),
+  external: (s=14) => svg('<path d="M6.5 3.5h-3v9h9v-3M9.5 2.75h3.75V6.5M13 3L7.5 8.5"/>', s),
+  back: (s=14) => svg('<path d="M13 8H3.5M7.5 4l-4 4 4 4"/>', s),
+  list: (s=14) => svg('<path d="M5.5 4h8M5.5 8h8M5.5 12h8"/><circle cx="2.75" cy="4" r=".6" fill="currentColor"/><circle cx="2.75" cy="8" r=".6" fill="currentColor"/><circle cx="2.75" cy="12" r=".6" fill="currentColor"/>', s),
+  msg: (s=14) => svg('<path d="M2.75 3.25h10.5v7.5h-6l-3 2.5v-2.5h-1.5z"/>', s),
+  link: (s=14) => svg('<path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 0 1 4.5 9l1-1"/>', s),
+  shield: (s=14) => svg('<path d="M8 1.75l5 2v4c0 3-2.2 5.3-5 6.5-2.8-1.2-5-3.5-5-6.5v-4z"/>', s),
+  blocked: (s=14) => svg('<circle cx="8" cy="8" r="6.25"/><path d="M3.6 12.4l8.8-8.8"/>', s),
+  spinner: (s=14) => `<svg class="i spin" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none" stroke-width="1.6"><circle cx="8" cy="8" r="6" stroke="var(--border-2)"/><path d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent)" stroke-linecap="round"/></svg>`,
+  waitingOn: (s=14) => `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--text-3)" stroke-width="1.4" stroke-dasharray="2 2"/><circle cx="8" cy="8" r="1.6" fill="var(--text-3)"/></svg>`,
+  needs: (s=14) => `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}"><circle cx="8" cy="8" r="6.5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/><rect x="6" y="5.25" width="1.3" height="5.5" rx=".5" fill="var(--accent)"/><rect x="8.7" y="5.25" width="1.3" height="5.5" rx=".5" fill="var(--accent)"/></svg>`,
+};
+const typeIcon = (t, s=14) => I[t](s);
+
+function statusIcon(st, s=14){
+  const c = 'var(--text-2)';
+  if (st==='backlog') return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--text-3)" stroke-width="1.4" stroke-dasharray="1.6 1.9"/></svg>`;
+  if (st==='todo') return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none"><circle cx="8" cy="8" r="6" stroke="var(--text-3)" stroke-width="1.4"/></svg>`;
+  if (st==='in_progress') return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none"><circle cx="8" cy="8" r="6" stroke="${c}" stroke-width="1.4"/><path d="M8 4.5a3.5 3.5 0 0 1 0 7z" fill="${c}"/></svg>`;
+  if (st==='in_review') return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}" fill="none"><circle cx="8" cy="8" r="6" stroke="${c}" stroke-width="1.4"/><path d="M8 4.5a3.5 3.5 0 1 1-3.5 3.5H8z" fill="${c}"/></svg>`;
+  return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}"><circle cx="8" cy="8" r="7" fill="var(--text-3)"/><path d="M5.2 8.2l1.9 1.9 3.8-4.2" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function prioIcon(p, s=14){
+  if (p===0) return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}"><g fill="var(--text-4)"><rect x="2" y="7.25" width="3" height="1.5" rx=".5"/><rect x="6.5" y="7.25" width="3" height="1.5" rx=".5"/><rect x="11" y="7.25" width="3" height="1.5" rx=".5"/></g></svg>`;
+  const on = {2:3,3:2,4:1}[p];
+  const bars = [[2,9,4],[6.5,6,7],[11,3,10]].map(([x,y,h],i)=>`<rect x="${x}" y="${y}" width="3" height="${h}" rx=".8" fill="${i<on?'var(--text-2)':'var(--border-2)'}"/>`).join('');
+  return `<svg class="i" viewBox="0 0 16 16" width="${s}" height="${s}">${bars}</svg>`;
+}
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const byId = id => state.issues.find(i => i.id === id);
+const fmt = m => m < 1 ? 'just now' : m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${String(m%60).padStart(2,'0')}m`;
+const priRank = p => PRI_ORDER.indexOf(p);
+const first = key => PEOPLE[key].name.split(' ')[0];
+
+function av(key, s=18){
+  const p = PEOPLE[key];
+  return `<span class="av" title="${p.name}" style="width:${s}px;height:${s}px;background:${p.bg};font-size:${Math.round(s*.44)}px">${p.initials}</span>`;
+}
+function avAgent(key, s=18){
+  return `<span class="av av-agent" title="${AGENTS[key].name} (agent)" style="width:${s}px;height:${s}px">${I.sparkle(Math.round(s*.62))}</span>`;
+}
+const agentWho = (key, s=18) => `<span class="who">${avAgent(key,s)}<span>${AGENTS[key].name}</span></span>`;
+const personWho = (key, s=18) => `<span class="who">${av(key,s)}<span>${PEOPLE[key].name}</span></span>`;
+
+const agentIssues = () => state.issues.filter(i => i.agent);
+function needsInput(){
+  return agentIssues().filter(i => i.run && i.run.state==='needs_input')
+    .sort((a,b) => priRank(a.pri)-priRank(b.pri) || b.run.waitMin-a.run.waitMin);
+}
+const active = () => agentIssues().filter(i => i.run && (i.run.state==='running' || i.run.state==='waiting'));
+const inReview = () => agentIssues().filter(i => i.run && i.run.state==='review');
+const agentDone = () => agentIssues().filter(i => i.status==='done');
+
+function currentStep(r){
+  const idx = r.steps.findIndex(s => s.s==='current');
+  return { idx, step: r.steps[idx], n: r.steps.length };
+}
+function stepLine(i){
+  const r = i.run;
+  if (r.state==='waiting') return `Waiting on ${PEOPLE[r.waitingOn].name}${r.via==='you' ? ' · you’re asking' : ' · via Slack'}`;
+  if (r.state==='review') return `PR #${r.pr.num} · ${r.pr.note}`;
+  const {idx, step, n} = currentStep(r);
+  if (!step) return '';
+  const label = r.replanning ? 'Replanning after your decision' : step.t;
+  return `Step ${idx+1}/${n} · ${label}${step.meta && r.state==='running' && !r.replanning ? ` <span class="muted">(${step.meta})</span>` : ''}`;
+}
+function progress(r){
+  const {idx, n} = currentStep(r);
+  if (idx < 0) return 1;
+  return idx / n;
+}
+const isSel = id => state.openId===id ? 'sel' : '';
+const waitCls = m => m >= 120 ? 'wait long' : 'wait';
+
+function quickActions(i){
+  const inp = i.run.input;
+  if (inp.type==='approval' && inp.quick)
+    return `<button class="btn" data-act="deny" data-id="${i.id}">Deny</button><button class="btn btn-primary" data-act="approve" data-id="${i.id}">Approve</button>`;
+  if (inp.type==='approval')
+    return `<button class="btn" data-act="open" data-id="${i.id}">Review</button>`;
+  if (inp.type==='access')
+    return `<button class="btn" data-act="open" data-id="${i.id}">Review access</button>`;
+  return `<button class="btn" data-act="open" data-id="${i.id}">Answer</button><button class="btn" data-act="forward" data-id="${i.id}">${I.msg(12)} Let ${AGENTS[i.agent].name} ask ${first(inp.person)}</button>`;
+}
+
+/* =========================================================
+   RENDER — page chrome
+   ========================================================= */
+function topbar(){
+  return `<div class="topbar">
+    <div class="crumb"><span class="team-mark">PA</span><b>Payments Platform</b><span class="sep">/</span>Cycles<span class="sep">/</span><b>Cycle 24</b></div>
+    <div class="sp"></div>
+    <div class="me">${av('sam',20)} Sam Ortiz · TPM</div>
+  </div>`;
+}
+function cycleHeader(){
+  const all = state.issues, done = all.filter(i=>i.status==='done');
+  const ag = agentIssues(), hu = all.filter(i=>i.who);
+  const pts = all.reduce((a,i)=>a+i.est,0), ptsDone = done.reduce((a,i)=>a+i.est,0);
+  const ptsRev = all.filter(i=>i.status==='in_review').reduce((a,i)=>a+i.est,0);
+  const ptsProg = all.filter(i=>i.status==='in_progress').reduce((a,i)=>a+i.est,0);
+  const pct = n => (n/pts*100).toFixed(1)+'%';
+  return `<div class="cycle">
+    <div>
+      <h1>Cycle 24</h1>
+      <div class="cycle-sub">Oct 6 – Oct 19 · Day 8 of 14 · 6 days left</div>
+    </div>
+    <div class="cycle-metrics">
+      <div class="cm"><div class="cm-l">Progress</div>
+        <div class="cm-v">${Math.round(ptsDone/pts*100)}% <span>· ${ptsDone} of ${pts} pts</span></div>
+        <div class="pbar"><i style="width:${pct(ptsDone)};background:var(--text-2)"></i><i style="width:${pct(ptsRev)};background:var(--text-4)"></i><i style="width:${pct(ptsProg)};background:#e0e0e5"></i></div>
+      </div>
+      <div class="cm"><div class="cm-l">Agents</div><div class="cm-v">${ag.length} issues <span>· ${ag.filter(i=>i.status==='done').length} done</span></div></div>
+      <div class="cm"><div class="cm-l">Humans</div><div class="cm-v">${hu.length} issues <span>· ${hu.filter(i=>i.status==='done').length} done</span></div></div>
+      <div class="cm"><div class="cm-l">Team</div>
+        <div class="stack" style="margin-top:3px">${['priya','marcus','dana','leo','sofia','jonah'].map(k=>av(k,18)).join('')}<span style="width:8px;box-shadow:none"></span>${Object.keys(AGENTS).map(k=>avAgent(k,18)).join('')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function cardHead(extra=''){
+  const n = needsInput(), oldest = n.length ? Math.max(...n.map(i=>i.run.waitMin)) : 0;
+  return `<div class="card-head">
+    <span style="color:var(--text-2)">${I.sparkle(14)}</span>
+    <span class="card-title">Agent activity</span>
+    <span class="live">Live</span>
+    ${extra}
+    <div class="stats-inline">
+      <span class="hot">${n.length ? '<i class="dot dot-ring"></i>' : ''}<b>${n.length}</b> need your input${n.length ? ` <span class="muted">· oldest ${fmt(oldest)}</span>` : ''}</span>
+      <span><b>${active().length}</b> running</span>
+      <span><b>${inReview().length}</b> in review</span>
+      <span><b>${agentDone().length}</b> done this cycle</span>
+    </div>
+  </div>`;
+}
+
+/* =========================================================
+   CARD A — Triage queue
+   ========================================================= */
+function cardA(){
+  const n = needsInput(), act = active(), rev = inReview();
+  const rowsNeed = n.map(i => {
+    const inp = i.run.input;
+    return `<div class="qrow row-click ${isSel(i.id)}" data-open="${i.id}">
+      <span><span class="type-chip">${typeIcon(inp.type,13)}${TYPE[inp.type].label}</span></span>
+      <div style="min-width:0">
+        <div class="q-ask ell">${inp.ask}</div>
+        <div class="q-sub">${prioIcon(i.pri,12)}<span class="idt">${i.id}</span><span class="ell">${i.title}</span>${inp.meta ? `<span class="muted">·</span><span class="blk">${inp.meta}</span>` : ''}</div>
+      </div>
+      ${agentWho(i.agent)}
+      <span class="${waitCls(i.run.waitMin)}">${I.clock(12)}${fmt(i.run.waitMin)}</span>
+      <div class="q-actions">${quickActions(i)}</div>
+    </div>`;
+  }).join('');
+  const runRow = i => `<div class="rrow row-click ${isSel(i.id)}" data-open="${i.id}">
+      ${i.run.state==='waiting' ? I.waitingOn(14) : i.run.state==='review' ? `<span style="color:var(--text-2)">${I.pr(14)}</span>` : I.spinner(14)}
+      ${prioIcon(i.pri,14)}
+      <span class="idt">${i.id}</span>
+      <span class="ell">${i.title}</span>
+      <span class="step-txt">${i.run.state==='running' ? `<span class="mini"><i style="width:${progress(i.run)*100}%"></i></span>` : ''}<span class="ell">${stepLine(i)}</span></span>
+      ${agentWho(i.agent)}
+      <span class="wait">${fmt(i.run.elapsedMin ?? 0)}</span>
+    </div>`;
+  const sec = (key, label, items, hint) => `
+    <div class="sec-head click" data-act="toggle" data-k="${key}">${I.chev(!state.collapsed[key])}${label} <span class="count">${items.length}</span>${hint?`<span class="hint">${hint}</span>`:''}</div>
+    ${state.collapsed[key] ? '' : items.map(runRow).join('')}`;
+  return `<div class="card">
+    ${cardHead()}
+    <div>
+      <div class="sec-head">${I.needs(14)}<span style="color:var(--text)">Needs your input</span> <span class="count">${n.length}</span><span class="hint">Sorted by priority, then time waiting</span></div>
+      ${rowsNeed || `<div class="empty">${I.check(14)} You’re all caught up. No agent is waiting on you.</div>`}
+      ${sec('a_running','Running', act, act.length ? `${act.filter(i=>i.run.state==='waiting').length ? act.filter(i=>i.run.state==='waiting').length+' waiting on teammates · ' : ''}no action needed` : '')}
+      ${sec('a_review','In review', rev, 'PRs waiting on human reviewers')}
+    </div>
+  </div>`;
+}
+
+/* =========================================================
+   CARD B — Grouped by input type
+   ========================================================= */
+function cardB(){
+  const n = needsInput(), act = active(), rev = inReview();
+  const oldest = n.length ? Math.max(...n.map(i=>i.run.waitMin)) : 0;
+  const waiting = act.filter(i=>i.run.state==='waiting');
+  const stat = (label, num, sub, hot) => `<div class="stat ${hot?'hot':''}"><div class="stat-label">${label}</div><div class="stat-num">${num}</div><div class="stat-sub">${sub}</div></div>`;
+  const col = type => {
+    const items = n.filter(i => i.run.input.type===type);
+    return `<div class="col">
+      <div class="col-head">${typeIcon(type,14)}<b>${{approval:'Approvals',access:'Access',person:'People'}[type]}</b><span class="muted">${items.length}</span><span class="col-desc">${TYPE[type].desc}</span></div>
+      ${items.map(i => `<div class="bitem row-click ${isSel(i.id)}" data-open="${i.id}">
+        <div class="b-top">${prioIcon(i.pri,12)}<span class="idt">${i.id}</span><span class="ell muted">${i.title}</span><span class="sp"></span><span class="${waitCls(i.run.waitMin)}">${I.clock(12)}${fmt(i.run.waitMin)}</span></div>
+        <div class="b-ask">${i.run.input.ask}</div>
+        <div class="b-foot">${agentWho(i.agent,16)}${i.run.input.meta ? `<span class="muted">·</span><span class="ell">${i.run.input.meta}</span>` : ''}<div class="q-actions">${quickActions(i)}</div></div>
+      </div>`).join('') || `<div class="col-empty">Nothing waiting</div>`}
+    </div>`;
+  };
+  return `<div class="card">
+    ${cardHead()}
+    <div class="stat-strip">
+      ${stat(`${I.needs(13)} Need your input`, n.length, n.length ? `Oldest waiting ${fmt(oldest)}` : 'All clear', true)}
+      ${stat(`${I.spinner(13)} Running`, act.length - waiting.length, act.length - waiting.length ? 'No action needed' : '—')}
+      ${stat(`${I.waitingOn(13)} Waiting on teammates`, waiting.length, waiting.length ? waiting.map(i=>first(i.run.waitingOn)).join(', ') : 'None')}
+      ${stat(`<span style="color:var(--text-2)">${I.pr(13)}</span> In review`, rev.length, rev.length ? `${rev.length} PR${rev.length>1?'s':''} waiting on reviewers` : '—')}
+      ${stat(`${statusIcon('done',13)} Done this cycle`, agentDone().length, `${agentDone().reduce((a,i)=>a+i.est,0)} pts shipped by agents`)}
+    </div>
+    <div class="cols">${col('approval')}${col('access')}${col('person')}</div>
+  </div>`;
+}
+
+/* =========================================================
+   CARD C — Agent roster
+   ========================================================= */
+function cardC(){
+  const rows = Object.keys(AGENTS).map(k => {
+    const mine = agentIssues().filter(i => i.agent===k);
+    const need = mine.filter(i => i.run && i.run.state==='needs_input').sort((a,b)=>priRank(a.pri)-priRank(b.pri)||b.run.waitMin-a.run.waitMin);
+    const live = mine.filter(i => i.run && i.run.state!=='needs_input');
+    return { k, mine, need, live,
+      score: need.length ? priRank(need[0].pri) : 9,
+      maxWait: need.length ? Math.max(...need.map(i=>i.run.waitMin)) : 0 };
+  }).sort((a,b) => a.score-b.score || b.need.length-a.need.length || b.maxWait-a.maxWait);
+
+  const sub = i => {
+    const r = i.run;
+    const icon = r.state==='needs_input' ? I.needs(14) : r.state==='waiting' ? I.waitingOn(14) : r.state==='review' ? `<span style="color:var(--text-2)">${I.pr(14)}</span>` : I.spinner(14);
+    const line = r.state==='needs_input' ? `<span class="type-chip" style="height:20px">${typeIcon(r.input.type,12)}${TYPE[r.input.type].label}</span><span class="ell" style="font-weight:500">${r.input.ask}</span>` : `<span class="ell">${i.title}</span><span class="ell muted" style="font-size:12px">${stepLine(i)}</span>`;
+    return `<div class="subrow row-click ${isSel(i.id)}" data-open="${i.id}">
+      ${icon}<span class="idt">${i.id}</span>
+      <span class="working">${line}</span>
+      <span class="ell muted" style="font-size:12px">${r.state==='needs_input' ? i.title : ''}</span>
+      <span class="${r.state==='needs_input' ? waitCls(r.waitMin) : 'wait'}">${r.state==='needs_input' ? I.clock(12)+fmt(r.waitMin) : fmt(r.elapsedMin ?? 0)}</span>
+      <div class="q-actions">${r.state==='needs_input' ? quickActions(i) : ''}</div>
+    </div>`;
+  };
+
+  const body = rows.map(({k, mine, need, live, maxWait}) => {
+    const a = AGENTS[k];
+    const key = 'c_'+k;
+    const open = !state.collapsed[key];
+    const done = mine.filter(i=>i.status==='done').length;
+    const segs = mine.map(i => i.status==='done' ? 'd' : i.run?.state==='needs_input' ? 'n' : i.run?.state==='review' ? 'r' : '').sort((x,y)=>'drn'.indexOf(y)-'drn'.indexOf(x) );
+    const order = ['d','r','','n'];
+    segs.sort((x,y)=>order.indexOf(x)-order.indexOf(y));
+    const top = need[0];
+    const runningOne = live.find(i=>i.run.state==='running') || live[0];
+    const working = top
+      ? `<span class="working">${typeIcon(top.run.input.type,14)}<span class="ell"><b style="font-weight:500">${top.run.input.ask}</b> <span class="muted">· ${top.id}</span></span></span>`
+      : runningOne ? `<span class="working" style="color:var(--text-2)">${runningOne.run.state==='review'?I.pr(14):I.spinner(14)}<span class="ell">${stepLine(runningOne)} <span class="muted">· ${runningOne.id}</span></span></span>` : '<span class="muted">Idle</span>';
+    return `<div class="arow row-click" data-act="toggle" data-k="${key}">
+        <span class="who" style="gap:10px">${avAgent(k,26)}<span><div class="a-name">${a.name}</div><div class="a-spec">${a.spec}</div></span></span>
+        <span>${need.length ? `<span class="pill pill-hot"><i class="dot"></i>${need.length} need${need.length>1?'':'s'} input</span>` : `<span class="pill">${I.spinner(12)} Running</span>`}</span>
+        ${working}
+        <span><div style="font-size:12px;color:var(--text-2)" class="num">${done} of ${mine.length} done</div><div class="seg-bar">${segs.map(s=>`<i class="${s}"></i>`).join('')}</div></span>
+        <span class="${need.length ? waitCls(maxWait) : 'wait'}">${need.length ? I.clock(12)+fmt(maxWait) : '—'}</span>
+        ${I.chev(open)}
+      </div>
+      ${open ? [...need, ...live].map(sub).join('') : ''}`;
+  }).join('');
+
+  return `<div class="card">
+    ${cardHead()}
+    <div class="rhead"><span>Agent</span><span>State</span><span>Most urgent</span><span>Cycle progress</span><span>Waiting</span><span></span></div>
+    <div>${body}</div>
+  </div>`;
+}
+
+/* =========================================================
+   ISSUE LIST
+   ========================================================= */
+function list(){
+  const f = state.filter;
+  const pool = state.issues.filter(i => f==='all' || (f==='agents' ? i.agent : i.who));
+  const tabs = [['all','All issues',state.issues.length],['agents','Agents',agentIssues().length],['humans','Humans',state.issues.filter(i=>i.who).length]];
+  const row = i => {
+    const clickable = !!i.run;
+    let tag = '';
+    if (i.run){
+      const r = i.run;
+      if (r.state==='needs_input') tag = `<span class="tag tag-accent">${typeIcon(r.input.type,12)} Needs input · ${TYPE[r.input.type].label}</span>`;
+      else if (r.state==='running'){ const {idx,n} = currentStep(r); tag = `<span class="tag">${I.spinner(11)} Step ${idx+1}/${n}</span>`; }
+      else if (r.state==='waiting') tag = `<span class="tag">${I.waitingOn(11)} Waiting on ${first(r.waitingOn)}</span>`;
+      else if (r.state==='review') tag = `<span class="tag">${I.pr(11)} PR #${r.pr.num}</span>`;
+    }
+    if (i.blockedBy){
+      const b = byId(i.blockedBy);
+      if (b && b.run && b.run.state==='needs_input') tag = `<span class="tag">${I.blocked(11)} Blocked by ${i.blockedBy}</span>`;
+    }
+    return `<div class="lrow ${clickable?'row-click':''} ${isSel(i.id)}" ${clickable?`data-open="${i.id}"`:''}>
+      ${prioIcon(i.pri)}<span class="idt">${i.id}</span>${statusIcon(i.status)}
+      <span class="ltitle"><span class="tt">${i.title}</span>${tag}</span>
+      <span class="llabels">${i.labels.map(l=>`<span class="label">${l}</span>`).join('')}</span>
+      <span class="lest">${i.est}</span>
+      ${i.agent ? avAgent(i.agent) : av(i.who)}
+    </div>`;
+  };
+  const stRank = st => STATUS.findIndex(s=>s[0]===st);
+  const byPri = state.groupBy==='priority';
+  const defs = byPri
+    ? PRI_ORDER.map(p => ({ key:'p_'+p, icon:prioIcon(p), label:PRI[p], items:pool.filter(i=>i.pri===p).sort((a,b)=>stRank(a.status)-stRank(b.status)) }))
+    : STATUS.map(([k,label]) => ({ key:'g_'+k, icon:statusIcon(k), label, items:pool.filter(i=>i.status===k).sort((a,b)=>priRank(a.pri)-priRank(b.pri)) }));
+  const groups = defs.map(({key, icon, label, items}) => {
+    if (!items.length) return '';
+    const open = !state.collapsed[key];
+    return `<div class="ghead" data-act="toggle" data-k="${key}">${I.chev(open)}${icon}${label}<span class="count">${items.length}</span></div>${open ? items.map(row).join('') : ''}`;
+  }).join('');
+  return `<div class="list-bar">
+      <div class="tabs">${tabs.map(([k,l,c])=>`<button class="${f===k?'on':''}" data-act="filter" data-f="${k}">${l} <span>${c}</span></button>`).join('')}</div>
+      <div class="sp"></div><span class="card-sub">Group by</span>
+      <div class="segctl">${[['priority','Priority'],['status','Status']].map(([k,l])=>`<button class="${state.groupBy===k?'on':''}" data-act="group" data-g="${k}">${l}</button>`).join('')}</div>
+    </div>
+    <div class="list">${groups}</div>`;
+}
+
+/* =========================================================
+   SIDE PANEL
+   ========================================================= */
+function draft(id, kind, fallback=''){ const k = id+':'+kind; return state.drafts[k] ?? fallback; }
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function requestBlock(i){
+  const r = i.run, inp = r.input, ag = AGENTS[i.agent].name;
+  const top = `<div class="req-top">${typeIcon(inp.type,14)}<b>${inp.type==='approval'?'Approval needed':inp.type==='access'?'Access requested':'Question for you'}</b><span>· ${ag} has been waiting ${fmt(r.waitMin)}</span>
+    ${inp.risk ? `<span class="risk ${inp.risk==='Medium'?'med':''}"><i></i>${inp.risk} risk</span>` : ''}</div>`;
+
+  if (inp.type==='approval'){
+    return `<div class="req">${top}
+      <div class="req-body">
+        <div class="req-ask">${inp.ask}</div>
+        <p>${inp.summary}</p>
+        <dl class="kv">${inp.details.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
+        <textarea class="ta" data-draft="${i.id}:note" placeholder="Add a note for ${ag} (optional)">${esc(draft(i.id,'note'))}</textarea>
+      </div>
+      <div class="req-foot"><span class="muted">${ag} won’t continue without a decision</span><span class="sp"></span>
+        <button class="btn btn-md" data-act="deny" data-id="${i.id}">Deny</button>
+        <button class="btn btn-md btn-primary" data-act="approve" data-id="${i.id}">Approve</button>
+      </div></div>`;
+  }
+
+  if (inp.type==='access'){
+    const dur = state.dur[i.id] || 'ticket';
+    const opts = [['24h','24 hours'],['7d','7 days'],['ticket',`Until ${i.id} closes`]];
+    return `<div class="req">${top}
+      <div class="req-body">
+        <div class="req-ask">${inp.ask}</div>
+        <p>${inp.why}</p>
+        <div class="svc"><span class="svc-logo">${inp.logo}</span><div><div class="svc-name">${inp.service}</div><div class="svc-env">${inp.env}</div></div><span class="sp"></span><span class="tag">${I.shield(11)} Scoped to ${ag}</span></div>
+        <div class="ta-label">Scopes</div>
+        <div class="scopes">${inp.scopes.map(([s,l,off])=>`<div class="scope ${off?'off':''}">${off?I.close(12):I.check(12)}<span>${s}</span><span class="lvl">${l}</span></div>`).join('')}</div>
+        <div class="ta-label">Duration</div>
+        <div class="segctl">${opts.map(([k,l])=>`<button class="${dur===k?'on':''}" data-act="dur" data-id="${i.id}" data-v="${k}">${l}</button>`).join('')}</div>
+      </div>
+      <div class="req-foot"><span class="muted">You can revoke access at any time</span><span class="sp"></span>
+        <button class="btn btn-md" data-act="deny" data-id="${i.id}">Deny</button>
+        <button class="btn btn-md" data-act="grant-ro" data-id="${i.id}">Read-only</button>
+        <button class="btn btn-md btn-primary" data-act="grant" data-id="${i.id}">Grant access</button>
+      </div></div>`;
+  }
+
+  // person: answer it yourself (primary) — or explicitly let the agent ask the teammate
+  const p = PEOPLE[inp.person], fn = first(inp.person);
+  const preview = state.preview[i.id];
+  return `<div class="req">${top}
+    <div class="req-body">
+      <div class="req-ask">${inp.question}</div>
+      <p>${inp.context}</p>
+      <textarea class="ta" data-draft="${i.id}:answer" placeholder="Answer ${ag}…">${esc(draft(i.id,'answer'))}</textarea>
+      <div class="ans-row"><span class="muted">⌘↵ to send</span><span class="sp"></span>
+        <button class="btn btn-md btn-primary" data-act="answer" data-id="${i.id}">Send answer</button></div>
+    </div>
+    <div class="req-alt">
+      <div class="alt-row">${av(inp.person,24)}
+        <div style="min-width:0"><div class="alt-t">Or let ${ag} ask ${fn}</div>
+          <div class="alt-d ell">${inp.whyShort} · ${inp.availability}</div></div>
+        <span class="sp"></span>
+        <button class="linkbtn" data-act="preview" data-id="${i.id}">${preview ? 'Hide' : 'Preview'}</button>
+        <button class="btn btn-md" data-act="forward" data-id="${i.id}">${I.msg(12)} Ask ${fn}</button>
+      </div>
+      ${preview ? `<textarea class="ta" style="min-height:92px;margin-top:10px" data-draft="${i.id}:msg">${esc(draft(i.id,'msg',inp.draft))}</textarea>
+        <div class="alt-d" style="margin-top:6px">Sent as a Slack DM linked to ${i.id}. You’re cc’d.</div>` : ''}
+    </div></div>`;
+}
+
+/* Plan timeline — the request lives on the step it's blocking */
+function waitingNotice(i){
+  const r = i.run, ag = AGENTS[i.agent].name, fn = first(r.waitingOn);
+  return `<div class="notice">${I.waitingOn(14)}<div>${r.via==='you' ? `You’re asking ${fn} directly. ${ag} has paused this step and is working on its other tickets.` : `${ag} sent your approved question to ${fn} on Slack. You’re cc’d.`}
+    <div class="notice-actions"><button class="btn" data-act="answered" data-id="${i.id}">${I.check(12)} Mark as answered</button>${r.via==='you'?'':`<button class="btn">${I.link(12)} Open Slack thread</button>`}</div></div></div>`;
+}
+function prBlock(i){
+  const r = i.run, pr = r.pr;
+  return `<div class="pr"><div class="pr-h">${I.pr(14)} PR #${pr.num}</div>
+    <div class="pr-m"><span class="num">${pr.diff}</span><span>${pr.files} files</span><span>CI ${pr.ci.toLowerCase()}</span><span class="sp"></span>${personWho(pr.reviewer,16)}</div>
+    <div class="pr-m" style="margin-top:6px">${I.clock(12)} ${pr.note} · ${fmt(r.elapsedMin)}</div></div>`;
+}
+function stepIcon(s, r){
+  if (s.s==='done') return `<svg class="i" viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6.5" fill="var(--surface)" stroke="var(--border-2)"/><path d="M5.4 8.2l1.8 1.8 3.4-3.8" stroke="var(--text-3)" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if (s.s==='todo') return `<svg class="i" viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="5" fill="var(--surface)" stroke="var(--border-2)" stroke-width="1.4" stroke-dasharray="2 1.6"/></svg>`;
+  if (r.state==='needs_input') return I.needs(16);
+  if (r.state==='waiting') return I.waitingOn(16);
+  return I.spinner(16);
+}
+function planStep(s, idx, i){
+  const r = i.run, cur = s.s==='current';
+  let tag = '', detail = '';
+  if (cur && r.state==='needs_input'){ tag = `<span class="tag tag-accent">Needs your input</span>`; detail = requestBlock(i); }
+  else if (cur && r.state==='waiting'){ tag = `<span class="tag">Waiting on ${first(r.waitingOn)}</span>`; detail = waitingNotice(i); }
+  else if (cur && r.state==='running'){ tag = r.replanning ? `<span class="tag">Replanning</span>` : `<span class="tag">In progress</span>`; }
+  if (s.note) detail = `<div class="tl-note">${I.check(12)}<span>${s.note}</span></div>` + detail;
+  if (r.state==='review' && idx===r.steps.length-1) detail += prBlock(i);
+  return `<div class="tl-step ${s.s}">
+    <div class="tl-icon">${stepIcon(s, r)}</div>
+    <div class="tl-body">
+      <div class="tl-head"><span class="tl-n num">${idx+1}</span><span class="tl-t">${s.t}</span>${tag}<span class="sp"></span><span class="meta">${s.meta||''}</span></div>
+      ${detail ? `<div class="tl-detail">${detail}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function panelHead(i, crumbs){
+  return `<div class="p-head">${crumbs}<span class="sp"></span>
+      <button class="icon-btn" title="Copy link">${I.link(14)}</button>
+      <button class="icon-btn" data-act="close" title="Close (Esc)">${I.close(14)}</button>
+    </div>`;
+}
+
+function logView(i){
+  const r = i.run;
+  return `<div class="panel-inner layer">
+    ${panelHead(i, `<button class="icon-btn" data-act="back" title="Back (Esc)">${I.back(14)}</button><span class="num">${i.id}</span><span class="muted">/</span><span style="color:var(--text)">Activity log</span>`)}
+    <div class="p-body">
+      <div class="p-title" style="margin-bottom:2px">Activity log</div>
+      <div class="card-sub" style="margin-bottom:16px">${agentWho(i.agent,14)} · ${r.log.length} events on ${i.id}</div>
+      <div class="logs">${r.log.slice().reverse().map(([t,h,me])=>`<div class="log ${me?'me':''}"><span class="t">${t}</span><span>${h}</span></div>`).join('')}</div>
+    </div></div>`;
+}
+
+function panelHTML(i){
+  if (state.panelView==='log') return logView(i);
+  const r = i.run;
+  const doneSteps = r.steps.filter(s=>s.s==='done').length;
+  return `<div class="panel-inner">
+    ${panelHead(i, `<span class="team-mark">PA</span><span>Payments Platform</span><span class="muted">/</span><span class="num">${i.id}</span>`)}
+    <div class="p-body">
+      <a class="p-title p-link" href="#" data-act="issue" data-id="${i.id}" title="Open ${i.id}">${i.title}${I.external(13)}</a>
+      <div class="p-meta">
+        <span>${statusIcon(i.status,13)}${STATUS.find(s=>s[0]===i.status)[1]}</span>
+        <span>${prioIcon(i.pri,13)}${PRI[i.pri]}</span>
+        <span>${agentWho(i.agent,16)}</span>
+        <span class="sp"></span>
+        <a class="linkbtn" href="#" data-act="issue" data-id="${i.id}">Open issue ${I.external(12)}</a>
+      </div>
+      <div class="p-sec">
+        <div class="p-sec-h">Plan <span class="count">${doneSteps} of ${r.steps.length} done</span><span class="sp"></span>
+          <button class="linkbtn" data-act="log">${I.list(12)} Activity log <span class="muted">${r.log.length}</span>${I.chev(false)}</button></div>
+        <div class="tl">${r.steps.map((s,idx)=>planStep(s,idx,i)).join('')}</div>
+      </div>
+    </div></div>`;
+}
+
+
+/* =========================================================
+   DEMO BAR
+   ========================================================= */
+function demo(){
+  const v = state.variant;
+  const opts = [['A','Triage queue'],['B','By input type'],['C','Agent roster']];
+  return `<span class="demo-label">Demo</span>
+    <span class="demo-name">Summary card</span>
+    <div class="dseg">${opts.map(([k,l])=>`<button class="${v===k?'on':''}" data-act="variant" data-v="${k}"><b>${k}</b>${l}</button>`).join('')}</div>
+    <span class="demo-sep"></span>
+    <button class="demo-btn" data-act="reset">Reset data</button>`;
+}
+
+/* =========================================================
+   RENDER + EVENTS
+   ========================================================= */
+function render(){
+  const card = state.variant==='B' ? cardB() : state.variant==='C' ? cardC() : cardA();
+  document.getElementById('main').innerHTML = topbar() + `<div class="wrap">${cycleHeader()}${card}${list()}</div>`;
+  const panel = document.getElementById('panel');
+  const i = state.openId && byId(state.openId);
+  if (i){ const sc = panel.querySelector('.p-body')?.scrollTop || 0; panel.innerHTML = panelHTML(i); const b = panel.querySelector('.p-body'); if (b && panel.dataset.id===i.id) b.scrollTop = sc; panel.dataset.id = i.id; }
+  panel.classList.toggle('open', !!i);
+  document.getElementById('demo').innerHTML = demo();
+}
+
+let toastTimer;
+function toast(html){
+  const t = document.getElementById('toast');
+  t.innerHTML = html; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+
+function resolve(id, act){
+  const i = byId(id), r = i.run, inp = r.input, ag = AGENTS[i.agent].name;
+  const cur = currentStep(r).step;
+  const note = (state.drafts[id+':note']||'').trim();
+  let line, msg;
+  const durLabel = {'24h':'24 hours','7d':'7 days','ticket':`until ${id} closes`}[state.dur[id]||'ticket'];
+  switch (act){
+    case 'approve':
+      r.state='running'; r.resolution='Approved by you';
+      line = `Approved by Sam Ortiz${note?`: “${esc(note)}”`:''}. Resuming.`; msg = `Approved · ${ag} is resuming ${id}`; break;
+    case 'deny':
+      r.state='running'; r.replanning=true; r.resolution = inp.type==='access' ? 'Access denied by you' : 'Denied by you';
+      line = `${inp.type==='access'?'Access denied':'Denied'} by Sam Ortiz${note?`: “${esc(note)}”`:''}. Replanning.`; msg = `Denied · ${ag} is replanning ${id}`; break;
+    case 'grant':
+      r.state='running'; r.resolution=`Access granted · ${durLabel}`;
+      line = `Access to ${inp.service} granted (${durLabel}). Resuming.`; msg = `${inp.service} access granted to ${ag}`; break;
+    case 'grant-ro':
+      r.state='running'; r.resolution=`Read-only access granted · ${durLabel}`;
+      line = `Read-only access to ${inp.service} granted (${durLabel}). Adjusting plan.`; msg = `Read-only ${inp.service} access granted to ${ag}`; break;
+    case 'forward':
+      r.state='waiting'; r.waitingOn=inp.person; r.via='agent';
+      line = `Sam Ortiz approved contacting ${PEOPLE[inp.person].name}. Question sent via Slack DM.`; msg = `${ag} messaged ${first(inp.person)} on Slack`; break;
+    case 'answer':
+      r.state='running'; r.resolution='Answered by you';
+      const a = (state.drafts[id+':answer']||'').trim();
+      line = `Sam Ortiz answered${a?`: “${esc(a)}”`:''}. Resuming.`; msg = `Answer sent · ${ag} is resuming ${id}`; break;
+    case 'self':
+      r.state='waiting'; r.waitingOn=inp.person; r.via='you';
+      line = `Sam Ortiz is asking ${PEOPLE[inp.person].name} directly. Step paused.`; msg = `${ag} paused · you’re asking ${first(inp.person)}`; break;
+    case 'answered':
+      r.state='running'; r.resolution=`${PEOPLE[r.waitingOn].name} answered`;
+      line = `${PEOPLE[r.waitingOn].name}’s answer received. Resuming.`; msg = `${ag} is resuming ${id}`; break;
+  }
+  const fnP = inp && inp.person ? first(inp.person) : '';
+  const stepNote = {
+    approve: `Approved by you · 16:21${note?` · “${esc(note)}”`:''}`,
+    deny: `Denied by you · 16:21 · ${ag} is replanning`,
+    grant: `Access granted (${durLabel}) · 16:21`,
+    'grant-ro': `Read-only access granted (${durLabel}) · 16:21`,
+    forward: `You approved ${ag} contacting ${fnP} · 16:21`,
+    answer: 'Answered by you · 16:21',
+    self: `You’re asking ${fnP} · 16:21`,
+    answered: `${fnP || 'Teammate'} answered · 16:21`,
+  }[act];
+  if (cur) cur.note = stepNote;
+  r.log.push(['16:21', line, true]);
+  r.elapsedMin = 0;
+  if (cur && r.state==='running' && !r.replanning) cur.meta = 'started 16:21';
+  toast(`${I.check(13)} ${msg}`);
+}
+
+function handle(act, d){
+  switch (act){
+    case 'variant': state.variant = d.v; store.set('variant', d.v); break;
+    case 'open': state.openId = d.id; state.panelView = 'detail'; break;
+    case 'log': state.panelView = 'log'; break;
+    case 'issue': toast(`Would open ${d.id} in the full issue view`); return;
+    case 'back': state.panelView = 'detail'; break;
+    case 'close': state.openId = null; break;
+    case 'toggle': state.collapsed[d.k] = !state.collapsed[d.k]; break;
+    case 'filter': state.filter = d.f; break;
+    case 'group': state.groupBy = d.g; break;
+    case 'preview': state.preview[d.id] = !state.preview[d.id]; break;
+    case 'dur': state.dur[d.id] = d.v; break;
+    case 'reset': state.issues = clone(INITIAL); state.preview={}; state.drafts={}; state.dur={}; state.openId=null; toast('Demo data reset'); break;
+    case 'answer':
+      if (!(state.drafts[d.id+':answer']||'').trim()){ toast('Type an answer first'); document.querySelector(`[data-draft="${d.id}:answer"]`)?.focus(); return; }
+      resolve(d.id, act); break;
+    case 'approve': case 'deny': case 'grant': case 'grant-ro': case 'forward': case 'self': case 'answered':
+      resolve(d.id, act); break;
+    default: return;
+  }
+  render();
+}
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]');
+  if (a){ e.stopPropagation(); if (a.tagName==="A") e.preventDefault(); handle(a.dataset.act, a.dataset); return; }
+  const o = e.target.closest('[data-open]');
+  if (o){ state.openId = state.openId===o.dataset.open ? null : o.dataset.open; state.panelView = 'detail'; render(); }
+});
+document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.draft;
+  if (k) state.drafts[k] = e.target.value;
+});
+document.addEventListener('keydown', e => {
+  const dk = e.target.dataset && e.target.dataset.draft;
+  if (dk && dk.endsWith(':answer') && e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); handle('answer', {id: dk.split(':')[0]}); return; }
+  if (e.key==='Escape' && state.openId && !e.target.matches('textarea')){ if (state.panelView==='log') state.panelView='detail'; else state.openId=null; render(); }
+});
+
+render();
+</script>
+</body>
+</html>
