@@ -1,6 +1,6 @@
 # Agent monitoring: design challenge prototype
 
-**▶ Live prototype: https://peymanhoss-source.github.io/non-linear-linear/** (desktop, 1440px)
+**▶ To try it:** click the green **Code** button → **Download ZIP**, unzip it, and open `index.html` in a browser. Designed for desktop at 1440px.
 
 **The prompt:** tickets can be assigned to an AI agent. Design a way to see how the agent is doing, and whether it needs input to get unblocked.
 
